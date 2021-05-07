@@ -1,3 +1,4 @@
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -11,7 +12,9 @@ public class NewOrderMain {
         var producer = new KafkaProducer<String, String>(properties());
         String value = "1,2,3";
         var record = new ProducerRecord<>("ECOMMERCE_NEW_ORDER", value, value);
-        producer.send(record, (data, exception) -> {
+        String emailContent = "Thank you for the order! Processing your order";
+        var emailRecord = new ProducerRecord<>("ECOMMERCE_SEND_EMAIL", emailContent, emailContent);
+        Callback callback = (data, exception) -> {
             if (exception != null) {
                 exception.printStackTrace();
                 return;
@@ -21,7 +24,9 @@ public class NewOrderMain {
                     + " : partition " + data.partition()
                     + " / offset " + data.offset()
                     + " / timestamp " + data.timestamp());
-        }).get();
+        };
+        producer.send(record, callback).get();
+        producer.send(emailRecord, callback).get();
     }
 
     private static Properties properties() {
